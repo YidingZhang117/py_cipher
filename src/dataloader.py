@@ -28,7 +28,7 @@ class Cipher_Dataloader(Dataset):
         inf_ind = np.where(self.negative_input_list == float("inf"))
         self.negative_input_list[inf_ind] = max_GO
 
-        # calculate mean and std for all input
+        # calculate mean and std for all input data
         self.mean, self.std = self.calculate_mean_std()
 
         # separate train and test data
