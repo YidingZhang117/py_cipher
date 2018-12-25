@@ -1,4 +1,6 @@
 .idea/
 __pycache__/
-.DS_Store
+*.DS_Store
+data/.DS_Store
 .Rhistory
+.DS_Store

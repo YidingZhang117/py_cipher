@@ -12,23 +12,19 @@ class Cipher_Dataloader(Dataset):
         # read from file
         self.positive_input_list, self.positive_label_list, \
         self.negative_input_list, self.negative_label_list = self.read_all_data(data_path)
+        # print(self.positive_input_list)
 
-        # change Inf of GO to Max value of GO
+        # combine data and convert to np.array
         self.all_input_list = self.positive_input_list + self.negative_input_list
         self.all_input_array = np.array(self.all_input_list)
-        inf_ind = np.where(self.all_input_array == float("inf"))
-        self.all_input_array[inf_ind] = -1
-        max_GO = np.max(self.all_input_array[:, 4:21])
-        self.all_input_array[inf_ind] = max_GO
-        # change Inf of input list
         self.positive_input_list = np.array(self.positive_input_list, dtype=np.float32)
         self.negative_input_list = np.array(self.negative_input_list, dtype=np.float32)
-        inf_ind = np.where(self.positive_input_list == float("inf"))
-        self.positive_input_list[inf_ind] = max_GO
-        inf_ind = np.where(self.negative_input_list == float("inf"))
-        self.negative_input_list[inf_ind] = max_GO
+        #change inf of GO to max value of GO
+        self.convert_inf(5,22)
+        # change inf of distance to max value of distance
+        self.convert_inf(4,5)
 
-        # calculate mean and std for all input data
+        # calculate mean and std for all input
         self.mean, self.std = self.calculate_mean_std()
 
         # separate train and test data
@@ -49,8 +45,8 @@ class Cipher_Dataloader(Dataset):
                                        torch.tensor(self.negative_label_list[ind])))
 
     def read_all_data(self, data_path):
-        positive_file = os.path.join(data_path, "positive.txt")
-        negative_file = os.path.join(data_path, "negative.txt")
+        positive_file = os.path.join(data_path, "input_pos_add_distance.txt")
+        negative_file = os.path.join(data_path, "input_neg_add_distance.txt")
         # positive list
         positive_input_list = []
         positive_label_list = []
@@ -67,8 +63,28 @@ class Cipher_Dataloader(Dataset):
             for l in content:
                 negative_input_list.append([float(i) for i in l.split("\t")[2:]])
                 negative_label_list.append([0.0, 1.0])
+        # print(len(positive_input_list))
+        # print(len(negative_input_list))
+        # print("pos_raw_input:")
+        # print(positive_input_list)
         return positive_input_list, positive_label_list,\
                negative_input_list, negative_label_list
+
+    def convert_inf(self,start,end):
+        #convert self.all_input_array, self.positive_input_list and self.negative_input_list to np.array before use this function
+        if end <= start:
+            print("warning: Please correct your input index")
+            return
+        # change Inf of GO to Max value of GO
+        inf_ind = np.where(self.all_input_array[:, start:end] == float("inf"))
+        self.all_input_array[:, start:end][inf_ind] = -1
+        max_GO = np.max(self.all_input_array[:, start:end])
+        self.all_input_array[:, start:end][inf_ind] = max_GO
+        # change Inf of input list
+        inf_ind = np.where(self.positive_input_list[:, start:end] == float("inf"))
+        self.positive_input_list[:, start:end][inf_ind] = max_GO
+        inf_ind = np.where(self.negative_input_list[:, start:end] == float("inf"))
+        self.negative_input_list[:, start:end][inf_ind] = max_GO
 
     def calculate_mean_std(self):
         mean_data = np.mean(self.all_input_array, axis=0)
@@ -78,7 +94,6 @@ class Cipher_Dataloader(Dataset):
 
     def transform(self, raw_data):
         return (raw_data - self.mean)/self.std
-        # return raw_data
 
     def __len__(self):
         if self.data_type == "train":
@@ -115,9 +130,9 @@ if __name__ == '__main__':
         train_dataset = Cipher_Dataloader("../data/", "train", train_ind)
         train_loader = DataLoader(dataset=train_dataset, batch_size=4, shuffle=True)
         for pos_input, pos_label, neg_input, neg_label in train_loader:
-            print(pos_input.size())
-            print(pos_label.size())
-            print(neg_input.size())
-            print(neg_label.size())
-            print(pos_input)
-            break
+             print(pos_input.size())
+             print(pos_label.size())
+             print(neg_input.size())
+             print(neg_label.size())
+             print(neg_input)
+             break
