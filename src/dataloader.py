@@ -93,7 +93,8 @@ class Cipher_Dataloader(Dataset):
                torch.tensor(std_data, dtype=torch.float)
 
     def transform(self, raw_data):
-        return (raw_data - self.mean)/self.std
+        # return (raw_data - self.mean)/self.std
+        return raw_data
 
     def __len__(self):
         if self.data_type == "train":

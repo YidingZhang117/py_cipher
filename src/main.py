@@ -18,10 +18,10 @@ def parseArgs():
     parser.add_argument('-m', default='simple_network', help='model file definition')
     parser.add_argument('-bs',default=4, type=int, help='batch size')
     parser.add_argument('-lt', default=10, type=int, help='Loss file saving refresh interval (seconds)')
-    parser.add_argument('-lr', default=1e-4, type= float, help='Learning rate')
+    parser.add_argument('-lr', default=5e-4, type= float, help='Learning rate')
     parser.add_argument('-data_path', default='data/', help='Training path')
     parser.add_argument('-rundir', default='../results/test' , help='Running directory')
-    parser.add_argument('-ep', default=5 , type=int , help='Epochs')
+    parser.add_argument('-ep', default=60, type=int , help='Epochs')
     # parser.add_argument('-start_from', default='../results/1216_best1/Best_model_period1.pth' , help='Start from previous model')
     parser.add_argument('-start_from', default='', help='Start from previous model')
     parser.add_argument('-optim', default='SGD', help='choose the optimizer')
@@ -65,7 +65,7 @@ def evaluate(loader, model, crit, device):
     #print the weight
     weight = [content for content in model.modules()]
     #print(dir(weight[2])) # look at the attribute of this class
-    print("linear1:", weight[2].weight)
+    #print("linear1:", weight[2].weight)
     # print("linear2:", weight[4].weight)
     # print("linear3:", weight[6].weight)
     # print("linear4:", weight[8].weight)
@@ -94,10 +94,13 @@ def evaluate(loader, model, crit, device):
         # val_target_index = torch.tensor(val_target_index)
         #print("val_target_index: ",val_target_index )
         #print("val_output: ",val_output )
-        loss = crit.forward(val_output, val_output)
-        #print("loss:",loss)
+        loss = crit.forward(val_output, val_target)
+        # print(val_output)
+        # print( val_output)
+        # print("loss:",loss)
+
         total_loss += loss.item()
-        #print("total_loss:",total_loss)
+        # print("loss:",loss.item())
         i += 1
         # calculate accuracy, recall and precision
         if torch.argmax(val_output) == torch.argmax(val_target):
@@ -128,6 +131,7 @@ def evaluate(loader, model, crit, device):
     print("test accuracy = ", count/i)
     print("test recall = ",recall)
     print("test precision = ", precision)
+    print("total_loss",total_loss)
     # print("F = ", 2*recall*precision/(recall+precision))
     return total_loss/i
 
@@ -136,7 +140,7 @@ def train(args, config, train_data, test_data, model, crit, optimizer, scheduler
     lfile = open(args.rundir+'/training_loss_period'+str(model.period)+'.txt', 'w')
     best_valist_set_loss = 100.0
     total_loss = 0.0
-    ratio = 1
+    ratio = 1.0
     for i in range(args.ep):
         scheduler.step()
         model.train(True)
@@ -234,9 +238,9 @@ if __name__ == '__main__':
     config['learningRate'] = args.lr
     model = model.to(device=device)
 
-    weight = [content for content in model.modules()]
+    # weight = [content for content in model.modules()]
     # print(dir(weight[2])) # look at the attribute of this class
-    print("linear1:", weight[2].weight)
+    #print("linear1:", weight[2].weight)
     # print("linear2:", weight[4].weight)
     # print("linear3:", weight[6].weight)
     # print("linear4:", weight[8].weight)
@@ -246,6 +250,6 @@ if __name__ == '__main__':
     if args.optim == 'SGD':
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-5) #optimizer
         print('Using SGD')
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40], gamma=0.1)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[200, 400], gamma=0.1)
     train(args, config, train_data, test_data, model, crit, optimizer, scheduler, device)
     
