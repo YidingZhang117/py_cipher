@@ -15,12 +15,16 @@ class Network(nn.Module):
         self.conv = nn.Sequential(
             nn.Linear(INPUT_DIM, 50),
             nn.ReLU(True),
+            #nn.PReLU(),
             nn.Linear(50, 100),
             nn.ReLU(True),
+            #nn.PReLU(),
             nn.Linear(100, 200),
             nn.ReLU(True),
+            #nn.PReLU(),
             nn.Linear(200, 300),
             nn.ReLU(True),
+            #nn.PReLU(),
             nn.Linear(300, OUTPUT_DIM),
             nn.Softmax()
         )

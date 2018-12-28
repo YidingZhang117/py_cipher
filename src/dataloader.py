@@ -19,20 +19,24 @@ class Cipher_Dataloader(Dataset):
         self.all_input_array = np.array(self.all_input_list)
         self.positive_input_list = np.array(self.positive_input_list, dtype=np.float32)
         self.negative_input_list = np.array(self.negative_input_list, dtype=np.float32)
-        print("==========")
-        print("rawdata:")
-        print(self.all_input_array[6,5:22])
+        #print("==========")
+        #print("rawdata:")
+        #print(self.all_input_array[6,5:22])
         #change inf of GO to max value of GO
         self.convert_inf(5,22)
         # change inf of distance to max value of distance
         self.convert_inf(4,5)
-        print("==========")
-        print("inf_removed data:")
-        print(self.all_input_array[6,5:22])
+        #print("==========")
+        #print("inf_removed data:")
+        #print(self.all_input_array[6,5:22])
         # calculate mean and std for all input
         self.mean, self.std = self.calculate_mean_std()
         # separate train and test data
+        print("dataloader:")
         pos_ind, neg_ind = train_ind
+        print("dataloader_after:")
+        print(pos_ind)
+        print(neg_ind)
         if self.data_type == "train":
             self.pos_data_list = [(torch.tensor(self.positive_input_list[ind]),
                                    torch.tensor(self.positive_label_list[ind]))
@@ -50,7 +54,7 @@ class Cipher_Dataloader(Dataset):
 
     def read_all_data(self, data_path):
         positive_file = os.path.join(data_path, "input_pos_add_distance.txt")
-        print(positive_file)
+        #print(positive_file)
         negative_file = os.path.join(data_path, "input_neg_add_distance.txt")
         # positive list
         positive_input_list = []
@@ -82,8 +86,8 @@ class Cipher_Dataloader(Dataset):
             return
         # change Inf of GO to Max value of GO
         inf_ind = np.where(self.all_input_array[:, start:end] == float("inf"))
-        print(end)
-        print(inf_ind)
+        #print(end)
+        #print(inf_ind)
         self.all_input_array[:, start:end][inf_ind] = -1
         max_GO = np.max(self.all_input_array[:, start:end])
         self.all_input_array[:, start:end][inf_ind] = max_GO
@@ -137,10 +141,13 @@ if __name__ == '__main__':
         train_ind = [pos_ind, neg_ind]
         train_dataset = Cipher_Dataloader("../data/", "train", train_ind)
         train_loader = DataLoader(dataset=train_dataset, batch_size=4, shuffle=True)
-        # for pos_input, pos_label, neg_input, neg_label in train_loader:
-        #      print(pos_input.size())
-        #      print(pos_label.size())
-        #      print(neg_input.size())
-        #      print(neg_label.size())
-        #      print(neg_input)
-        #      break
+        num_iter = 0
+        for pos_input, pos_label, neg_input, neg_label in train_loader:
+             num_iter += 1
+             print(pos_input.size())
+             print(pos_label.size())
+             print(neg_input.size())
+             print(neg_label.size())
+             print(neg_input)
+        print(num_iter)
+
