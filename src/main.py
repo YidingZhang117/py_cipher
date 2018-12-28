@@ -22,7 +22,7 @@ def parseArgs():
     parser.add_argument('-lr', default=4e-4, type= float, help='Learning rate')
     parser.add_argument('-data_path', default='data/', help='Training path')
     parser.add_argument('-rundir', default='../results/test' , help='Running directory')
-    parser.add_argument('-ep', default=20, type=int , help='Epochs')
+    parser.add_argument('-ep', default=50, type=int , help='Epochs')
     #parser.add_argument('-start_from', default='../results/1227best3_newloss0.0012075659663726885/Best_model_period2.pth' , help='Start from previous model')
     parser.add_argument('-start_from', default='', help='Start from previous model')
     #../results/1125best3_0.019168664837100852/Best_model_period1.pth
@@ -176,7 +176,7 @@ def train(args, config, train_data, test_data, model, crit, optimizer, scheduler
     lfile = open(args.rundir+'/training_loss_period'+str(model.period)+'.txt', 'w')
     best_valist_set_loss = 100.0
     total_loss = 0.0
-    ratio = 10
+    ratio = 20
     for i in range(args.ep):
         scheduler.step()
         model.train(True)
@@ -240,7 +240,6 @@ def train(args, config, train_data, test_data, model, crit, optimizer, scheduler
             #         print("Right:", batch_pos_output[ind], batch_pos_target[ind])
             #     else:
             #         print("Wrong:", batch_pos_output[ind], batch_pos_target[ind])
-
         print('================================================================')
         print('Evaluating at epoch {}'.format(i))
         valid_eval_loss,eval_result_epoch = evaluate(test_loader, model, crit, device)
@@ -262,6 +261,7 @@ if __name__ == '__main__':
     best_loss = []
     best_epoch_all = []
     eval_result_all = []
+    test_ind_all = []
     for sample_i in range(0,10):
         # --- dataloader ---
         try:
@@ -295,9 +295,9 @@ if __name__ == '__main__':
         config['learningRate'] = args.lr
         model = model.to(device=device)
 
-        weight = [content for content in model.modules()]
+        #weight = [content for content in model.modules()]
         #print(dir(weight[2])) # look at the attribute of this class
-        # print("linear1:", weight[2].weight)
+        #print("linear1:", weight[2].weight)
         # print("linear2:", weight[4].weight)
         # print("linear3:", weight[6].weight)
         # print("linear4:", weight[8].weight)
@@ -312,15 +312,19 @@ if __name__ == '__main__':
         best_loss.append(best_valist_set_loss)
         best_epoch_all.append(best_epoch)
         eval_result_all.append(eval_result_epoch)
+        test_ind_all.append(test_ind)
+
     best_loss_np = np.array(best_loss,dtype=float)
     mean_loss = np.mean(best_loss_np)
     sample_i = 0
     for sample in eval_result_all:
-        print("sample time %d:" % (sample_i))
+        print("=======sample time %d:========" % (sample_i))
         print("best epoch at",best_epoch_all[sample_i])
+        print("test ind:",test_ind_all[sample_i])
         for row in sample:
             print(row)
         sample_i += 1
+
     print("best loss in all sampling time:")
     print(best_loss_np)
     print("mean loss:")
