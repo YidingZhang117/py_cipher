@@ -74,7 +74,6 @@ def get_dataloader(args):
         print(args.choose_ind)
         # print(torch.load(args.choose_ind))
         train_ind, test_ind = torch.load(args.choose_ind)
-        print(train_ind)
         print(test_ind)
     train_data = Cipher_Dataloader(full_path, "train", train_ind)
     test_data = Cipher_Dataloader(full_path, "test", test_ind)
@@ -250,8 +249,9 @@ def train(args, config, train_data, test_data, model, crit, optimizer, scheduler
         if best_valist_set_loss > valid_eval_loss:
             best_valist_set_loss = valid_eval_loss
             best_eval_result_epoch = eval_result_epoch
+            best_epoch = i
             save_best_model(model, args.rundir, config, i)
-    return best_valist_set_loss, best_eval_result_epoch
+    return best_valist_set_loss, best_eval_result_epoch, best_epoch
 
 
 # main 
@@ -260,6 +260,7 @@ if __name__ == '__main__':
     args = parseArgs()
     device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
     best_loss = []
+    best_epoch_all = []
     eval_result_all = []
     for sample_i in range(0,10):
         # --- dataloader ---
@@ -296,7 +297,7 @@ if __name__ == '__main__':
 
         weight = [content for content in model.modules()]
         #print(dir(weight[2])) # look at the attribute of this class
-        print("linear1:", weight[2].weight)
+        # print("linear1:", weight[2].weight)
         # print("linear2:", weight[4].weight)
         # print("linear3:", weight[6].weight)
         # print("linear4:", weight[8].weight)
@@ -307,17 +308,19 @@ if __name__ == '__main__':
             optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-5) #optimizer
             print('Using SGD')
         scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20], gamma=0.1)
-        best_valist_set_loss,eval_result_epoch = train(args, config, train_data, test_data, model, crit, optimizer, scheduler, device)
+        best_valist_set_loss,eval_result_epoch,best_epoch = train(args, config, train_data, test_data, model, crit, optimizer, scheduler, device)
         best_loss.append(best_valist_set_loss)
+        best_epoch_all.append(best_epoch)
         eval_result_all.append(eval_result_epoch)
     best_loss_np = np.array(best_loss,dtype=float)
     mean_loss = np.mean(best_loss_np)
     sample_i = 0
     for sample in eval_result_all:
-        sample_i += 1
         print("sample time %d:" % (sample_i))
+        print("best epoch at",best_epoch_all[sample_i])
         for row in sample:
             print(row)
+        sample_i += 1
     print("best loss in all sampling time:")
     print(best_loss_np)
     print("mean loss:")
