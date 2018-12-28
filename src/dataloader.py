@@ -32,11 +32,7 @@ class Cipher_Dataloader(Dataset):
         # calculate mean and std for all input
         self.mean, self.std = self.calculate_mean_std()
         # separate train and test data
-        print("dataloader:")
         pos_ind, neg_ind = train_ind
-        print("dataloader_after:")
-        print(pos_ind)
-        print(neg_ind)
         if self.data_type == "train":
             self.pos_data_list = [(torch.tensor(self.positive_input_list[ind]),
                                    torch.tensor(self.positive_label_list[ind]))
