@@ -19,10 +19,10 @@ def parseArgs():
     parser.add_argument('-m', default='simple_network', help='model file definition')
     parser.add_argument('-bs',default=4, type=int, help='batch size')
     parser.add_argument('-lt', default=10, type=int, help='Loss file saving refresh interval (seconds)')
-    parser.add_argument('-lr', default=4e-4, type= float, help='Learning rate')
+    parser.add_argument('-lr', default=5e-5, type= float, help='Learning rate')
     parser.add_argument('-data_path', default='data/', help='Training path')
     parser.add_argument('-rundir', default='../results/test' , help='Running directory')
-    parser.add_argument('-ep', default=50, type=int , help='Epochs')
+    parser.add_argument('-ep', default=10, type=int , help='Epochs')
     #parser.add_argument('-start_from', default='../results/1227best3_newloss0.0012075659663726885/Best_model_period2.pth' , help='Start from previous model')
     parser.add_argument('-start_from', default='', help='Start from previous model')
     #../results/1125best3_0.019168664837100852/Best_model_period1.pth
@@ -75,8 +75,8 @@ def get_dataloader(args):
         # print(torch.load(args.choose_ind))
         train_ind, test_ind = torch.load(args.choose_ind)
         print(test_ind)
-    train_data = Cipher_Dataloader(full_path, "train", train_ind)
-    test_data = Cipher_Dataloader(full_path, "test", test_ind)
+    train_data = Cipher_Dataloader(full_path, "train", train_ind,test_ind)
+    test_data = Cipher_Dataloader(full_path, "test", train_ind, test_ind)
     return train_data, test_data,train_ind,test_ind
 
 
@@ -176,7 +176,7 @@ def train(args, config, train_data, test_data, model, crit, optimizer, scheduler
     lfile = open(args.rundir+'/training_loss_period'+str(model.period)+'.txt', 'w')
     best_valist_set_loss = 100.0
     total_loss = 0.0
-    ratio = 20
+    ratio = 3
     for i in range(args.ep):
         scheduler.step()
         model.train(True)
@@ -262,7 +262,7 @@ if __name__ == '__main__':
     best_epoch_all = []
     eval_result_all = []
     test_ind_all = []
-    for sample_i in range(0,10):
+    for sample_i in range(0,1):
         # --- dataloader ---
         try:
             train_data, test_data,train_ind, test_ind = get_dataloader(args)
@@ -307,7 +307,7 @@ if __name__ == '__main__':
         if args.optim == 'SGD':
             optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-5) #optimizer
             print('Using SGD')
-        scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20], gamma=0.1)
+        scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, 200], gamma=0.1)
         best_valist_set_loss,eval_result_epoch,best_epoch = train(args, config, train_data, test_data, model, crit, optimizer, scheduler, device)
         best_loss.append(best_valist_set_loss)
         best_epoch_all.append(best_epoch)

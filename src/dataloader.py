@@ -2,10 +2,10 @@ import os
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
-
+import random
 
 class Cipher_Dataloader(Dataset):
-    def __init__(self, data_path, data_type, train_ind):
+    def __init__(self, data_path, data_type, train_ind,test_ind):
         self.data_path = data_path
         self.data_type = data_type
 
@@ -23,9 +23,9 @@ class Cipher_Dataloader(Dataset):
         #print("rawdata:")
         #print(self.all_input_array[6,5:22])
         #change inf of GO to max value of GO
-        self.convert_inf(5,22)
+        self.convert_inf(4,21)
         # change inf of distance to max value of distance
-        self.convert_inf(4,5)
+        #self.convert_inf(4,5)
         #print("==========")
         #print("inf_removed data:")
         #print(self.all_input_array[6,5:22])
@@ -33,6 +33,13 @@ class Cipher_Dataloader(Dataset):
         self.mean, self.std = self.calculate_mean_std()
         # separate train and test data
         pos_ind, neg_ind = train_ind
+        test_pos_ind, test_neg_ind = test_ind
+        del_col = self.find_colind(test_ind)
+        self.positive_input_list = np.delete(self.positive_input_list, del_col, 1)
+        self.negative_input_list = np.delete(self.negative_input_list, del_col,1)
+        #print("after:")
+        #print(np.shape(self.positive_input_list))
+
         if self.data_type == "train":
             self.pos_data_list = [(torch.tensor(self.positive_input_list[ind]),
                                    torch.tensor(self.positive_label_list[ind]))
@@ -43,15 +50,23 @@ class Cipher_Dataloader(Dataset):
         elif self.data_type == "test":
             self.data_list = [(torch.tensor(self.positive_input_list[ind]),
                                torch.tensor(self.positive_label_list[ind]))
-                              for ind in pos_ind]
-            for ind in neg_ind:
+                              for ind in test_pos_ind]
+            for ind in test_neg_ind:
                 self.data_list.append((torch.tensor(self.negative_input_list[ind]),
                                        torch.tensor(self.negative_label_list[ind])))
+    def find_colind(self,test_ind):
+        test_pos_ind, test_neg_ind = test_ind
+        test_pos_ind_array = np.array(test_pos_ind)
+        test_neg_ind_array = np.array(test_neg_ind)
+        del_ind_GO = 4 + test_pos_ind_array
+        del_ind_D = 21 + test_pos_ind_array
+        self.del_col = np.append(del_ind_GO,del_ind_D)
+        return self.del_col
 
     def read_all_data(self, data_path):
-        positive_file = os.path.join(data_path, "input_pos_add_distance.txt")
+        positive_file = os.path.join(data_path, "input_pos_17distance.txt")
         #print(positive_file)
-        negative_file = os.path.join(data_path, "input_neg_add_distance.txt")
+        negative_file = os.path.join(data_path, "input_neg_17distance.txt")
         # positive list
         positive_input_list = []
         positive_label_list = []
@@ -100,8 +115,11 @@ class Cipher_Dataloader(Dataset):
                torch.tensor(std_data, dtype=torch.float)
 
     def transform(self, raw_data):
-        return (raw_data - self.mean)/self.std
-        # return raw_data
+        #self.mean_use = np.delete(self.mean, self.del_col, 0)
+        #self.std_use = np.delete(self.std, self.del_col, 0)
+        #return (raw_data - self.mean_use)/self.std_use
+        #return (raw_data - self.mean) / self.std
+        return raw_data
 
     def __len__(self):
         if self.data_type == "train":
@@ -131,19 +149,26 @@ class Cipher_Dataloader(Dataset):
 
 
 if __name__ == '__main__':
-    for i in range(1):
-        pos_ind = [ind for ind in range(15)]
-        neg_ind = [ind for ind in range(80)]
+    for m in range(1):
+        all_pos_ind = [i for i in range(0, 17)]
+        all_neg_ind = [i for i in range(0, 84)]
+        pos_ind = random.sample(range(0, 17), 15)
+        neg_ind = random.sample(range(0, 84), 80)
         train_ind = [pos_ind, neg_ind]
-        train_dataset = Cipher_Dataloader("../data/", "train", train_ind)
+        test_pos_ind = list(set(all_pos_ind).difference(set(pos_ind)))
+        test_neg_ind = list(set(all_neg_ind).difference(set(neg_ind)))
+        test_ind = [test_pos_ind, test_neg_ind]
+
+        train_dataset = Cipher_Dataloader("../data/", "train", train_ind,test_ind)
         train_loader = DataLoader(dataset=train_dataset, batch_size=4, shuffle=True)
         num_iter = 0
         for pos_input, pos_label, neg_input, neg_label in train_loader:
              num_iter += 1
+             print(test_ind)
              print(pos_input.size())
              print(pos_label.size())
              print(neg_input.size())
              print(neg_label.size())
-             print(neg_input)
+             #print(neg_input)
         print(num_iter)
 
