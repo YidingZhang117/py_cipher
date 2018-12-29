@@ -22,11 +22,7 @@ def parseArgs():
     parser.add_argument('-lr', default=4e-5, type= float, help='Learning rate')
     parser.add_argument('-data_path', default='data/', help='Training path')
     parser.add_argument('-rundir', default='../results/test' , help='Running directory')
-<<<<<<< HEAD
-    parser.add_argument('-ep', default=10, type=int , help='Epochs')
-=======
     parser.add_argument('-ep', default=20, type=int , help='Epochs')
->>>>>>> parent of f965dc1... add test ind at each sample time; increase the ratio;
     #parser.add_argument('-start_from', default='../results/1227best3_newloss0.0012075659663726885/Best_model_period2.pth' , help='Start from previous model')
     parser.add_argument('-start_from', default='', help='Start from previous model')
     #../results/1125best3_0.019168664837100852/Best_model_period1.pth
@@ -266,12 +262,8 @@ if __name__ == '__main__':
     best_loss = []
     best_epoch_all = []
     eval_result_all = []
-<<<<<<< HEAD
     test_ind_all = []
-    for sample_i in range(0,1):
-=======
     for sample_i in range(0,10):
->>>>>>> parent of f965dc1... add test ind at each sample time; increase the ratio;
         # --- dataloader ---
         try:
             train_data, test_data,train_ind, test_ind = get_dataloader(args)
