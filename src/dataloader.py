@@ -34,9 +34,9 @@ class Cipher_Dataloader(Dataset):
         # separate train and test data
         pos_ind, neg_ind = train_ind
         test_pos_ind, test_neg_ind = test_ind
-        del_col = self.find_colind(test_ind)
-        self.positive_input_list = np.delete(self.positive_input_list, del_col, 1)
-        self.negative_input_list = np.delete(self.negative_input_list, del_col,1)
+        #del_col = self.find_colind(test_ind)
+        #self.positive_input_list = np.delete(self.positive_input_list, del_col, 1)
+        #self.negative_input_list = np.delete(self.negative_input_list, del_col,1)
         #print("after:")
         #print(np.shape(self.positive_input_list))
 
