@@ -1,0 +1,4 @@
+milestones=[5, 20]
+ratio = 10
+'-lr', default=4e-4
+'-ep', default=30,
