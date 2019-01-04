@@ -80,7 +80,7 @@ if __name__ == '__main__':
         test_input = test_input.to(device)
         test_output = model(test_input)
         test_output.detach()
-        lfile.write('order {}, test output = {}\n'.format(it_num, test_output))
+        lfile.write('the {}th gene, test output = {}\n'.format(it_num, test_output))
         #print("order=",it_num,test_output)
         result.append(test_output)
     print(it_num)

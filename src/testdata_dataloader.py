@@ -8,9 +8,9 @@ class Cipher_testDataloader(Dataset):
     def __init__(self, data_path):
         self.data_path = data_path
         #read unlabeled test data and all data
-        self.data, self.all_data = self.read_data(data_path)
+        self.data = self.read_data(data_path)
         #change inf of GO to max value of GO in self.all_data
-        self.convert_inf(4,21)
+        #self.convert_inf(4,21)
         # calculate mean and std for self.all_data
         self.mean, self.std = self.calculate_mean_std()
         self.data = torch.tensor(self.data)
@@ -19,21 +19,21 @@ class Cipher_testDataloader(Dataset):
     def read_data(self, data_path):
         all_unlabeled_file = os.path.join(data_path, "input_all_log.txt")
         #print(positive_file)
-        all_file = os.path.join(data_path, "input_all_with_labeled_data_log.txt")
+        #all_file = os.path.join(data_path, "input_all_with_labeled_data_log.txt")
         # unlabeled list
         all_unlabeled_list = []
         with open(all_unlabeled_file, "r") as f:
             content = f.read().split("\n")
             for l in content:
                 all_unlabeled_list.append([float(i) for i in l.split("\t")[2:]])
-        all_list = []
-        with open(all_file, "r") as f:
-            content = f.read().split("\n")
-            for l in content:
-                all_list.append([float(i) for i in l.split("\t")[2:]])
+        # all_list = []
+        # with open(all_file, "r") as f:
+        #     content = f.read().split("\n")
+        #     for l in content:
+        #         all_list.append([float(i) for i in l.split("\t")[2:]])
         all_unlabeled_list = np.array(all_unlabeled_list, dtype=np.float32)
-        all_list = np.array(all_list, dtype=np.float32)
-        return all_unlabeled_list, all_list
+        # all_list = np.array(all_list, dtype=np.float32)
+        return all_unlabeled_list
 
     def convert_inf(self,start,end):
         if end <= start:
@@ -48,8 +48,8 @@ class Cipher_testDataloader(Dataset):
 
     def calculate_mean_std(self):
         #use all_list to get mean and std
-        mean_data = np.mean(self.all_data, axis=0)
-        std_data = np.std(self.all_data, axis=0)
+        mean_data = np.mean(self.data, axis=0)
+        std_data = np.std(self.data, axis=0)
         return torch.tensor(mean_data, dtype=torch.float), \
                torch.tensor(std_data, dtype=torch.float)
 
