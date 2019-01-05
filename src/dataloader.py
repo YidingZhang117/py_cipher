@@ -19,26 +19,26 @@ class Cipher_Dataloader(Dataset):
         self.all_input_array = np.array(self.all_input_list)
         self.positive_input_list = np.array(self.positive_input_list, dtype=np.float32)
         self.negative_input_list = np.array(self.negative_input_list, dtype=np.float32)
-        #print("==========")
-        #print("rawdata:")
-        #print(self.all_input_array[6,5:22])
 
         #change inf of GO to max value of GO
         self.convert_inf(4,21)
         # change inf of distance to max value of distance
         #self.convert_inf(4,5)
-
-        #print("==========")
-        #print("inf_removed data:")
-        #print(self.all_input_array[6,5:22])
-        # calculate mean and std for all input
-        self.mean, self.std = self.calculate_mean_std()
-        # separate train and test data
         pos_ind, neg_ind = train_ind
         test_pos_ind, test_neg_ind = test_ind
         del_col = self.find_colind(test_ind)
         self.positive_input_list = np.delete(self.positive_input_list, del_col, 1)
         self.negative_input_list = np.delete(self.negative_input_list, del_col,1)
+        # print(del_col)
+        self.all_input_array = np.delete(self.all_input_array, del_col,1)
+        # print(type(self.positive_input_list))
+        # print(type(self.negative_input_list))
+        # print(type(self.all_input_array))
+        self.all_input_array = self.GOmean(self.all_input_array)
+        self.positive_input_list = self.GOmean(self.positive_input_list)
+        self.negative_input_list = self.GOmean(self.negative_input_list)
+
+        self.mean, self.std = self.calculate_mean_std()
         #print("after:")
         #print(np.shape(self.positive_input_list))
 
@@ -61,8 +61,9 @@ class Cipher_Dataloader(Dataset):
         test_pos_ind_array = np.array(test_pos_ind)
         test_neg_ind_array = np.array(test_neg_ind)
         del_ind_GO = 4 + test_pos_ind_array
-        del_ind_D = 21 + test_pos_ind_array
-        self.del_col = np.append(del_ind_GO,del_ind_D)
+        #del_ind_D = 21 + test_pos_ind_array
+        #self.del_col = np.append(del_ind_GO,del_ind_D)
+        self.del_col = del_ind_GO
         return self.del_col
 
     def read_all_data(self, data_path):
@@ -110,6 +111,19 @@ class Cipher_Dataloader(Dataset):
         inf_ind = np.where(self.negative_input_list[:, start:end] == float("inf"))
         self.negative_input_list[:, start:end][inf_ind] = max_GO
 
+    def GOmean(self,data):
+        temp = np.mean(data[:,4:20],axis=1)
+        temp1 = np.array([temp.tolist()])
+        temp2 = data[:,0:4]
+        with_mean = np.concatenate((temp2,temp1.T),axis=1)
+        # print(np.shape(with_mean))
+        return with_mean
+
+
+        #self.positive_input_list = self.positive_input_list[4:19]
+        #self.negative_input_list = self.negative_input_list[4:19]
+
+
     def calculate_mean_std(self):
         mean_data = np.mean(self.all_input_array, axis=0)
         std_data = np.std(self.all_input_array, axis=0)
@@ -117,10 +131,11 @@ class Cipher_Dataloader(Dataset):
                torch.tensor(std_data, dtype=torch.float)
 
     def transform(self, raw_data):
-        self.mean_use = np.delete(self.mean, self.del_col, 0)
-        self.std_use = np.delete(self.std, self.del_col, 0)
-        return (raw_data - self.mean_use)/self.std_use
-        #return (raw_data - self.mean) / self.std
+        #self.mean_use = np.delete(self.mean, self.del_col, 0)
+        #self.std_use = np.delete(self.std, self.del_col, 0)
+        #return (raw_data - self.mean_use)/self.std_use
+        raw_data = raw_data.to(dtype = torch.float32)
+        return (raw_data - self.mean) / self.std
         #return raw_data
 
     def __len__(self):
@@ -174,6 +189,6 @@ if __name__ == '__main__':
              print(pos_label.size())
              print(neg_input.size())
              print(neg_label.size())
-             #print(neg_input)
+             # print(neg_input)
         print(num_iter)
 
