@@ -8,10 +8,12 @@ class Cipher_Dataloader(Dataset):
     def __init__(self, data_path, data_type, train_ind,test_ind):
         self.data_path = data_path
         self.data_type = data_type
+        self.train_ind = train_ind
+        self.test_ind = test_ind
 
         # read from file
         self.positive_input_list, self.positive_label_list, \
-        self.negative_input_list, self.negative_label_list = self.read_all_data(data_path)
+        self.negative_input_list, self.negative_label_list = self.read_all_data()
         # print(self.positive_input_list)
 
         # combine data and convert to np.array
@@ -24,24 +26,25 @@ class Cipher_Dataloader(Dataset):
         self.convert_inf(4,21)
         # change inf of distance to max value of distance
         #self.convert_inf(4,5)
-        pos_ind, neg_ind = train_ind
-        test_pos_ind, test_neg_ind = test_ind
-        del_col = self.find_colind(test_ind)
-        self.positive_input_list = np.delete(self.positive_input_list, del_col, 1)
-        self.negative_input_list = np.delete(self.negative_input_list, del_col,1)
-        # print(del_col)
-        self.all_input_array = np.delete(self.all_input_array, del_col,1)
-        # print(type(self.positive_input_list))
-        # print(type(self.negative_input_list))
-        # print(type(self.all_input_array))
-        self.all_input_array = self.GOmean(self.all_input_array)
-        self.positive_input_list = self.GOmean(self.positive_input_list)
-        self.negative_input_list = self.GOmean(self.negative_input_list)
 
+        #delete those column related to evaluating test data
+        pos_ind, neg_ind = self.train_ind
+        test_pos_ind, test_neg_ind = self.test_ind
+        self.find_colind()
+        self.positive_input_list = np.delete(self.positive_input_list, self.del_col, 1)
+        self.negative_input_list = np.delete(self.negative_input_list, self.del_col,1)
+        #self.all_input_array = np.delete(self.all_input_array, del_col,1)
+
+        #convert the multi-column GO to one-column GO mean
+        self.positive_input_list = self.GOmean(self.positive_input_list,"pos")
+        self.negative_input_list = self.GOmean(self.negative_input_list,"neg")
+        self.all_input_array = np.concatenate((self.positive_input_list,
+                                               self.negative_input_list),axis= 0)
+
+        #calculate the mean and std for all labeled data
         self.mean, self.std = self.calculate_mean_std()
-        #print("after:")
-        #print(np.shape(self.positive_input_list))
 
+        #construct tuple for each labeled sample
         if self.data_type == "train":
             self.pos_data_list = [(torch.tensor(self.positive_input_list[ind]),
                                    torch.tensor(self.positive_label_list[ind]))
@@ -56,20 +59,20 @@ class Cipher_Dataloader(Dataset):
             for ind in test_neg_ind:
                 self.data_list.append((torch.tensor(self.negative_input_list[ind]),
                                        torch.tensor(self.negative_label_list[ind])))
-    def find_colind(self,test_ind):
-        test_pos_ind, test_neg_ind = test_ind
+
+    def find_colind(self):
+        test_pos_ind, test_neg_ind = self.test_ind
         test_pos_ind_array = np.array(test_pos_ind)
         test_neg_ind_array = np.array(test_neg_ind)
         del_ind_GO = 4 + test_pos_ind_array
         #del_ind_D = 21 + test_pos_ind_array
         #self.del_col = np.append(del_ind_GO,del_ind_D)
         self.del_col = del_ind_GO
-        return self.del_col
 
-    def read_all_data(self, data_path):
-        positive_file = os.path.join(data_path, "input_positive_log_new.txt")
+    def read_all_data(self):
+        positive_file = os.path.join(self.data_path, "input_positive_log_new.txt")
         #print(positive_file)
-        negative_file = os.path.join(data_path, "input_negative_log_new.txt")
+        negative_file = os.path.join(self.data_path, "input_negative_log_new.txt")
         # positive list
         positive_input_list = []
         positive_label_list = []
@@ -86,22 +89,17 @@ class Cipher_Dataloader(Dataset):
             for l in content:
                 negative_input_list.append([float(i) for i in l.split("\t")[2:]])
                 negative_label_list.append([0.0, 1.0])
-        # print(len(positive_input_list))
-        # print(len(negative_input_list))
-        # print("pos_raw_input:")
-        # print(positive_input_list)
         return positive_input_list, positive_label_list,\
                negative_input_list, negative_label_list
 
     def convert_inf(self,start,end):
-        #convert self.all_input_array, self.positive_input_list and self.negative_input_list to np.array before use this function
+        # convert self.all_input_array, self.positive_input_list and
+        # self.negative_input_list to np.array before use this function
         if end <= start:
             print("warning: Please correct your input index")
             return
         # change Inf of GO to Max value of GO
         inf_ind = np.where(self.all_input_array[:, start:end] == float("inf"))
-        #print(end)
-        #print(inf_ind)
         self.all_input_array[:, start:end][inf_ind] = -1
         max_GO = np.max(self.all_input_array[:, start:end])
         self.all_input_array[:, start:end][inf_ind] = max_GO
@@ -111,18 +109,36 @@ class Cipher_Dataloader(Dataset):
         inf_ind = np.where(self.negative_input_list[:, start:end] == float("inf"))
         self.negative_input_list[:, start:end][inf_ind] = max_GO
 
-    def GOmean(self,data):
-        temp = np.mean(data[:,4:20],axis=1)
-        temp1 = np.array([temp.tolist()])
-        temp2 = data[:,0:4]
-        with_mean = np.concatenate((temp2,temp1.T),axis=1)
-        # print(np.shape(with_mean))
-        return with_mean
+    def GOmean(self, data, da_type):
+        #convert the 15 GO to one column GO mean
+        if da_type == "pos":
+            print(self.test_ind)
+            temp_sum = np.sum(data[:,4:],axis=1)
+            diag = data[:,4:19].diagonal().tolist()
+            del_list,_ = self.test_ind
+            temp_diag = diag[0:del_list[0]] + [0] + \
+                        diag[del_list[0]:del_list[1]-1] + [0] +\
+                        diag[del_list[1]-1:]
+            print("diag")
+            print(diag)
+            print("temp_diag")
+            print(temp_diag)
+            print(np.shape(temp_sum))
+            print(np.shape(temp_diag))
+            temp_sum= temp_sum - temp_diag
 
-
-        #self.positive_input_list = self.positive_input_list[4:19]
-        #self.negative_input_list = self.negative_input_list[4:19]
-
+            temp_mean = temp_sum/(len(diag)-1)
+            temp_mean[del_list] = temp_sum[del_list]/len(diag)
+            temp1 = np.array([temp_mean])
+            temp2 = data[:,0:4]
+            with_mean = np.concatenate((temp2,temp1.T),axis=1)
+            return with_mean
+        else:
+            temp = np.mean(data[:, 4:], axis=1)
+            temp1 = np.array([temp.tolist()])
+            temp2 = data[:, 0:4]
+            with_mean = np.concatenate((temp2, temp1.T), axis=1)
+            return with_mean
 
     def calculate_mean_std(self):
         mean_data = np.mean(self.all_input_array, axis=0)
@@ -167,18 +183,18 @@ class Cipher_Dataloader(Dataset):
 
 if __name__ == '__main__':
     for m in range(1):
-        # all_pos_ind = [i for i in range(0, 17)]
-        # all_neg_ind = [i for i in range(0, 84)]
-        # pos_ind = random.sample(range(0, 17), 15)
-        # neg_ind = random.sample(range(0, 84), 80)
-        # train_ind = [pos_ind, neg_ind]
-        # test_pos_ind = list(set(all_pos_ind).difference(set(pos_ind)))
-        # test_neg_ind = list(set(all_neg_ind).difference(set(neg_ind)))
-        # test_ind = [test_pos_ind, test_neg_ind]
-        pos_ind = [ind for ind in range(15)]
-        neg_ind = [ind for ind in range(80)]
+        all_pos_ind = [i for i in range(0, 17)]
+        all_neg_ind = [i for i in range(0, 84)]
+        pos_ind = random.sample(range(0, 17), 15)
+        neg_ind = random.sample(range(0, 84), 80)
         train_ind = [pos_ind, neg_ind]
-        test_ind = [[15, 16], [80, 81, 82, 83]]
+        test_pos_ind = list(set(all_pos_ind).difference(set(pos_ind)))
+        test_neg_ind = list(set(all_neg_ind).difference(set(neg_ind)))
+        test_ind = [test_pos_ind, test_neg_ind]
+        # pos_ind = [ind for ind in range(15)]
+        # neg_ind = [ind for ind in range(80)]
+        # train_ind = [pos_ind, neg_ind]
+        # test_ind = [[15, 16], [80, 81, 82, 83]]
         train_dataset = Cipher_Dataloader("../data/", "train", train_ind,test_ind)
         train_loader = DataLoader(dataset=train_dataset, batch_size=4, shuffle=True)
         num_iter = 0

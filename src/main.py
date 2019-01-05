@@ -19,7 +19,7 @@ def parseArgs():
     parser.add_argument('-m', default='simple_network', help='model file definition')
     parser.add_argument('-bs',default=4, type=int, help='batch size')
     parser.add_argument('-lt', default=10, type=int, help='Loss file saving refresh interval (seconds)')
-    parser.add_argument('-lr', default=2e-4, type= float, help='Learning rate')
+    parser.add_argument('-lr', default=1e-3, type= float, help='Learning rate')
     parser.add_argument('-data_path', default='data/', help='Training path')
     parser.add_argument('-rundir', default='../results/test' , help='Running directory')
     parser.add_argument('-ep', default=20, type=int , help='Epochs')
@@ -57,25 +57,23 @@ def get_dataloader(args):
         print("Error: Missing training path for depth!")
         sys.exit(1)
     if args.choose_ind == '':
-        #all_pos_ind = [i for i in range(0,17)]
-        #all_neg_ind = [i for i in range(0,84)]
-        # pos_ind = random.sample(range(0, 17),15 )
-        # neg_ind = random.sample(range(0,84),80)
-        pos_ind = [ind for ind in range(15)]
-        neg_ind = [ind for ind in range(80)]
+        all_pos_ind = [i for i in range(0,17)]
+        all_neg_ind = [i for i in range(0,84)]
+        pos_ind = random.sample(range(0, 17),15 )
+        neg_ind = random.sample(range(0,84),80)
+        test_pos_ind = list(set(all_pos_ind).difference(set(pos_ind)))
+        test_neg_ind = list(set(all_neg_ind).difference(set(neg_ind)))
+        test_ind = [test_pos_ind,test_neg_ind]
+        # pos_ind = [ind for ind in range(15)]
+        # neg_ind = [ind for ind in range(80)]
         train_ind = [pos_ind, neg_ind]
-        #test_pos_ind = list(set(all_pos_ind).difference(set(pos_ind)))
-        #test_neg_ind = list(set(all_neg_ind).difference(set(neg_ind)))
-        #test_ind = [test_pos_ind,test_neg_ind]
-        #print("test ind:")
-        #print(test_ind)
-        test_ind = [[15,16], [80,81,82,83]]
+        # test_ind = [[15,16], [80,81,82,83]]
     else:
         print(args.choose_ind)
         # print(torch.load(args.choose_ind))
         train_ind, test_ind = torch.load(args.choose_ind)
         print(test_ind)
-    train_data = Cipher_Dataloader(full_path, "train", train_ind,test_ind)
+    train_data = Cipher_Dataloader(full_path, "train", train_ind, test_ind)
     test_data = Cipher_Dataloader(full_path, "test", train_ind, test_ind)
     return train_data, test_data,train_ind,test_ind
 
@@ -176,7 +174,7 @@ def train(args, config, train_data, test_data, model, crit, optimizer, scheduler
     lfile = open(args.rundir+'/training_loss_period'+str(model.period)+'.txt', 'w')
     best_valist_set_loss = 100.0
     total_loss = 0.0
-    ratio = 5
+    ratio = 2
     for i in range(args.ep):
         scheduler.step()
         model.train(True)
@@ -265,12 +263,12 @@ if __name__ == '__main__':
     test_ind_all = []
     for sample_i in range(0,1):
         # --- dataloader ---
-        try:
-            train_data, test_data,train_ind, test_ind = get_dataloader(args)
-        except Exception as e:
-            print("Error when get dataloader")
-            sys.exit(1)
-
+        # try:
+        #     train_data, test_data,train_ind, test_ind = get_dataloader(args)
+        # except Exception as e:
+        #     print("Error when get dataloader")
+        #     sys.exit(1)
+        train_data, test_data, train_ind, test_ind = get_dataloader(args)
         # run path
         if not os.path.exists(args.rundir):
             os.mkdir(args.rundir)
@@ -326,5 +324,8 @@ if __name__ == '__main__':
     print(best_loss_np)
     print("mean loss:")
     print(mean_loss)
+    print("test_ind:")
+    print(test_ind)
+
 
 
